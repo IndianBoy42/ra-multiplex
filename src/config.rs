@@ -31,6 +31,10 @@ mod default {
     pub fn log_filters() -> String {
         "info".to_owned()
     }
+
+    pub fn log_file() -> String {
+        "/tmp/ra-mux.PID.log".to_owned()
+    }
 }
 
 mod de {
@@ -95,6 +99,9 @@ pub struct Config {
 
     #[serde(default = "default::log_filters")]
     pub log_filters: String,
+
+    #[serde(default = "default::log_file")]
+    pub log_file: String,
 }
 
 #[cfg(test)]
@@ -117,6 +124,7 @@ impl Config {
             listen: default::listen(),
             connect: default::connect(),
             log_filters: default::log_filters(),
+            log_file: default::log_file(),
         }
     }
 
@@ -135,11 +143,29 @@ impl Config {
 
     /// panics if called multiple times
     fn init_logger(&self) {
+        // configure log facade
         env_logger::Builder::from_env(env_logger::Env::new().default_filter_or(&self.log_filters))
             .format_timestamp(None)
             .format_module_path(false)
             .format_target(false)
             .init();
+
+        // redirect stderr to a file
+        let log_file = self
+            .log_file
+            .replacen("PID", &format!("{}", std::process::id()), 1);
+        let log_file = match std::fs::File::options()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(log_file)
+        {
+            Ok(f) => f.as_fd(),
+            Err(e) => {
+                eprintln!("Unable to open log file");
+                return;
+            }
+        };
     }
 
     /// tries to load configuration file from the standard location, if it fails it constructs
