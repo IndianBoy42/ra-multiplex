@@ -111,7 +111,7 @@ fn generate_default_config() {
     use std::path::Path;
 
     let config = Config::default_values();
-    let config = toml::to_vec(&config).expect("failed serialize");
+    let config = toml::to_string(&config).expect("failed serialize");
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("defaults.toml");
     fs::write(path, config).expect("failed writing defaults.toml file");
 }
@@ -138,7 +138,8 @@ impl Config {
         let config_data = fs::read(&config_path)
             .await
             .with_context(|| format!("cannot read config file `{path}`"))?;
-        toml::from_slice(&config_data).with_context(|| format!("cannot parse config file `{path}`"))
+        toml::from_str(std::str::from_utf8(&config_data).context("File is not utf-8")?)
+            .with_context(|| format!("cannot parse config file `{path}`"))
     }
 
     /// panics if called multiple times
