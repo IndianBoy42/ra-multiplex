@@ -1,6 +1,6 @@
 use anyhow::{ensure, Context, Result};
 use serde::{Deserialize, Serialize};
-use std::env;
+use std::{env, path::PathBuf};
 use tokio::io::{AsyncBufRead, AsyncBufReadExt};
 
 #[derive(Serialize, Deserialize)]
@@ -8,12 +8,12 @@ pub struct Init {
     proto: String,
     version: String,
     pub cwd: String,
-    pub server: String,
+    pub server: PathBuf,
     pub args: Vec<String>,
 }
 
 impl Init {
-    pub fn new(server: String, args: Vec<String>) -> Init {
+    pub fn new(server: PathBuf, args: Vec<String>) -> Init {
         Init {
             proto: env!("CARGO_PKG_NAME").to_owned(),
             version: env!("CARGO_PKG_VERSION").to_owned(),

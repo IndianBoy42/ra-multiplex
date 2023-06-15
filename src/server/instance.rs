@@ -54,7 +54,7 @@ pub type MessageReaders = RwLock<HashMap<u16, mpsc::Sender<Message>>>;
 /// can reuse it
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct InstanceKey {
-    server: String,
+    server: PathBuf,
     args: Vec<String>,
     workspace_root: PathBuf,
 }
@@ -96,7 +96,11 @@ impl InstanceKey {
 
         if config.workspace_detection {
             // naive detection whether the requested server is likely rust-analyzer
-            if proto_init.server.contains("rust-analyzer") {
+            if proto_init
+                .server
+                .to_string_lossy()
+                .contains("rust-analyzer")
+            {
                 if let Some(cargo_root) = find_cargo_workspace_root(&proto_init.cwd) {
                     workspace_root = cargo_root;
                 }
@@ -247,7 +251,7 @@ impl RaInstance {
             .with_context(|| {
                 format!(
                     "couldn't spawn rust-analyzer with command: `{}{}{}`",
-                    &key.server,
+                    &key.server.display(),
                     if key.args.is_empty() { "" } else { " " },
                     key.args.join(" ")
                 )
@@ -275,7 +279,10 @@ impl RaInstance {
         instance.spawn_stdin_task(rx, stdin);
 
         let path = key.workspace_root.display();
-        log::info!("[{path} {pid}] spawned {server}", server = &key.server);
+        log::info!(
+            "[{path} {pid}] spawned {server}",
+            server = &key.server.display()
+        );
 
         Ok(instance)
     }

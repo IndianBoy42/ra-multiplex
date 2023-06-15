@@ -6,6 +6,12 @@ use tokio::net::TcpStream;
 use tokio::{io, task};
 
 pub async fn main(server_path: String, server_args: Vec<String>) -> Result<()> {
+    let server_path = which::which_in(
+        server_path,
+        std::env::var_os("PATH"),
+        std::env::current_dir().context("cwd is invalid from here")?,
+    )
+    .context("Invalid server path")?;
     let config = Config::load_or_default().await;
 
     let proto_init = proto::Init::new(server_path, server_args);
